@@ -12,6 +12,7 @@ import Toast from "./components/Toast.jsx";
 import MobileBottomNav from "./components/MobileBottomNav.jsx";
 import ClientAuth from "./components/ClientAuth.jsx";
 import ClientProfile from "./components/ClientProfile.jsx";
+import InstallPrompt from "./components/InstallPrompt.jsx";
 import { masters } from "./data/siteData.js";
 import { useLocalStorage } from "./hooks/useLocalStorage.js";
 
@@ -33,6 +34,7 @@ export default function App() {
   const [installPromptEvent, setInstallPromptEvent] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const [favoriteIds, setFavoriteIds] = useLocalStorage("twins:favorites", []);
   const [leads, setLeads] = useLocalStorage("twins:leads", []);
   const [clients, setClients] = useLocalStorage("twins:clients", []);
@@ -83,11 +85,13 @@ export default function App() {
       event.preventDefault();
       setInstallPromptEvent(event);
       setCanInstall(true);
+      setShowInstallModal(true);
     };
 
     const handleAppInstalled = () => {
       setCanInstall(false);
       setInstallPromptEvent(null);
+      setShowInstallModal(false);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -216,6 +220,7 @@ export default function App() {
       return;
     }
 
+    setShowInstallModal(false);
     installPromptEvent.prompt();
     const choiceResult = await installPromptEvent.userChoice;
     setCanInstall(false);
@@ -441,6 +446,12 @@ export default function App() {
         onFavoriteToggle={toggleFavorite}
       />
       <Toast toast={toast} onClose={() => setToast(null)} />
+      <InstallPrompt
+        isOpen={showInstallModal}
+        isMobileDevice={isMobileDevice}
+        onInstall={handleInstall}
+        onClose={() => setShowInstallModal(false)}
+      />
       <MobileBottomNav />
     </div>
   );
