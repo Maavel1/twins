@@ -8,7 +8,12 @@ export default defineConfig({
     watch: {
       usePolling: true,
       interval: 1000,
-      ignored: ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/public/twins__logo.svg"],
+      ignored: [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/dist/**",
+        "**/public/twins__logo.svg",
+      ],
     },
   },
 });

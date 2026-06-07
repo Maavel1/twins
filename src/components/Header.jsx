@@ -6,6 +6,8 @@ export default function Header({
   onMenuToggle,
   client,
   onCityUnavailable,
+  canInstall,
+  onInstall,
 }) {
   return (
     <>
@@ -74,6 +76,15 @@ export default function Header({
                 </a>
               </>
             )}
+            {canInstall && (
+              <button
+                type="button"
+                onClick={onInstall}
+                className="hidden rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 md:block"
+              >
+                Установить
+              </button>
+            )}
             <a
               href="#master-register"
               className="hidden rounded-xl bg-pink-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-pink-600 sm:block"
@@ -110,6 +121,15 @@ export default function Header({
             Пока доступен только один город. Остальные подключим позже.
           </div>
         </div>
+        {canInstall && (
+          <button
+            type="button"
+            onClick={onInstall}
+            className="mb-3 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          >
+            Установить приложение
+          </button>
+        )}
         {client ? (
           <a
             href="#client-profile"

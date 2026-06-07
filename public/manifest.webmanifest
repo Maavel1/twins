@@ -1,0 +1,21 @@
+{
+  "name": "Twins — мастера рядом",
+  "short_name": "Twins",
+  "description": "Найди мастера рядом в Костанае и добавь сайт на главный экран как приложение.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/twins__logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/twins__logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

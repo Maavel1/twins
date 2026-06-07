@@ -30,6 +30,8 @@ export default function App() {
   });
   const [geoStatus, setGeoStatus] = useState("requesting");
   const [userLocation, setUserLocation] = useState(null);
+  const [installPromptEvent, setInstallPromptEvent] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
   const [favoriteIds, setFavoriteIds] = useLocalStorage("twins:favorites", []);
   const [leads, setLeads] = useLocalStorage("twins:leads", []);
   const [clients, setClients] = useLocalStorage("twins:clients", []);
@@ -63,6 +65,27 @@ export default function App() {
       () => setGeoStatus("denied"),
       { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 },
     );
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setInstallPromptEvent(event);
+      setCanInstall(true);
+    };
+
+    const handleAppInstalled = () => {
+      setCanInstall(false);
+      setInstallPromptEvent(null);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
   }, []);
 
   useEffect(() => {
@@ -160,6 +183,24 @@ export default function App() {
   const showToast = (title, text = "") => {
     setToast({ title, text });
     window.setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleInstall = async () => {
+    if (!installPromptEvent) {
+      showToast("Установка недоступна", "Ожидайте подсказку браузера.");
+      return;
+    }
+
+    installPromptEvent.prompt();
+    const choiceResult = await installPromptEvent.userChoice;
+    setCanInstall(false);
+    setInstallPromptEvent(null);
+
+    if (choiceResult.outcome === "accepted") {
+      showToast("Приложение установлено", "Twins добавлен на главный экран.");
+    } else {
+      showToast("Установка отменена", "Вы можете установить приложение позже.");
+    }
   };
 
   const toggleFavorite = (master) => {
@@ -279,6 +320,8 @@ export default function App() {
             `${city} пока в ожидании. Сейчас доступен Костанай.`,
           )
         }
+        canInstall={canInstall}
+        onInstall={handleInstall}
       />
       {route === "master" ? (
         <main>
