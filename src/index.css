@@ -1,0 +1,135 @@
+@import url("https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Geologica", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+@keyframes pro-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(236, 72, 153, 0);
+  }
+}
+
+.pro-pulse {
+  animation: pro-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up-1 {
+  animation: fade-up 0.6s 0.1s ease both;
+}
+
+.fade-up-2 {
+  animation: fade-up 0.6s 0.2s ease both;
+}
+
+.bottom-sheet {
+  transform: translateY(calc(100% - 232px));
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.mobile-map-screen {
+  height: calc(100svh - 64px);
+  min-height: 620px;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-map-screen {
+    min-height: calc(620px + env(safe-area-inset-bottom));
+  }
+}
+
+.snap-scroll {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-scroll > * {
+  scroll-snap-align: start;
+}
+
+.snap-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.card-lift {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.12);
+}
+
+.pro-card-glow {
+  box-shadow:
+    0 0 0 1.5px #ec4899,
+    0 4px 20px rgba(236, 72, 153, 0.15);
+}
+
+.header-blur {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.count-up {
+  animation: count-up 0.5s 0.8s ease both;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 3px;
+}
