@@ -77,13 +77,22 @@ export default function Header({
               </>
             )}
             {canInstall && (
-              <button
-                type="button"
-                onClick={onInstall}
-                className="hidden rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 md:block"
-              >
-                Установить
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={onInstall}
+                  className="hidden rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 md:block"
+                >
+                  Установить
+                </button>
+                <button
+                  type="button"
+                  onClick={onInstall}
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 md:hidden"
+                >
+                  Установить
+                </button>
+              </>
             )}
             <a
               href="#master-register"

@@ -32,6 +32,7 @@ export default function App() {
   const [userLocation, setUserLocation] = useState(null);
   const [installPromptEvent, setInstallPromptEvent] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [favoriteIds, setFavoriteIds] = useLocalStorage("twins:favorites", []);
   const [leads, setLeads] = useLocalStorage("twins:leads", []);
   const [clients, setClients] = useLocalStorage("twins:clients", []);
@@ -65,6 +66,16 @@ export default function App() {
       () => setGeoStatus("denied"),
       { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 },
     );
+  }, []);
+
+  useEffect(() => {
+    const isMobile =
+      typeof navigator !== "undefined" &&
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent,
+      );
+
+    setIsMobileDevice(isMobile);
   }, []);
 
   useEffect(() => {
@@ -189,8 +200,19 @@ export default function App() {
   };
 
   const handleInstall = async () => {
+    const isIos =
+      typeof navigator !== "undefined" &&
+      /iphone|ipad|ipod/i.test(navigator.userAgent);
+
     if (!installPromptEvent) {
-      showToast("Установка недоступна", "Ожидайте подсказку браузера.");
+      if (isIos) {
+        showToast(
+          "Добавь на главный экран",
+          "Нажми «Поделиться» и выбери «На экран «Домой»».",
+        );
+      } else {
+        showToast("Установка недоступна", "Ожидайте подсказку браузера.");
+      }
       return;
     }
 
@@ -323,7 +345,7 @@ export default function App() {
             `${city} пока в ожидании. Сейчас доступен Костанай.`,
           )
         }
-        canInstall={canInstall}
+        canInstall={canInstall || isMobileDevice}
         onInstall={handleInstall}
       />
       {route === "master" ? (
