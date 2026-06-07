@@ -4,4 +4,11 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      ignored: ["**/node_modules/**", "**/.git/**", "**/dist/**", "**/public/twins__logo.svg"],
+    },
+  },
 });
