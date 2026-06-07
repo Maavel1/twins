@@ -4,7 +4,7 @@ export default function InstallPrompt({
   onClose,
   isMobileDevice,
 }) {
-  if (!isOpen || !isMobileDevice) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end bg-black/50">
