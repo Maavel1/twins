@@ -22,7 +22,6 @@ import { limitListSize, throttleAction } from "./utils/security.js";
 import { validateSearch } from "./utils/input.js";
 import { consumeAuthReturn, saveAuthReturn } from "./utils/clientAuth.js";
 import { isValidClientSession, isValidMasterSession } from "./utils/session.js";
-import GuestPromptBanner from "./components/GuestPromptBanner.jsx";
 
 function resolveRoute() {
   const hash = window.location.hash;
@@ -72,6 +71,9 @@ export default function App() {
   const [reviews, setReviews] = useLocalStorage("twins:reviews", []);
   const [, setProStatus] = useLocalStorage("twins:masterProStatus", null);
   const [toast, setToast] = useState(null);
+  const [installPromptEvent, setInstallPromptEvent] = useState(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isIosInstallHint, setIsIosInstallHint] = useState(false);
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
@@ -113,7 +115,45 @@ export default function App() {
     };
 
     window.addEventListener("hashchange", openMastersSheetOnMobile);
-    return () => window.removeEventListener("hashchange", openMastersSheetOnMobile);
+    return () =>
+      window.removeEventListener("hashchange", openMastersSheetOnMobile);
+  }, []);
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+    const isIosSafari =
+      /iphone|ipad|ipod/.test(userAgent) &&
+      /safari/.test(userAgent) &&
+      !/crios|chrome|fxios/.test(userAgent);
+
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setInstallPromptEvent(event);
+      if (isMobile && window.matchMedia("(max-width: 767px)").matches) {
+        setShowInstallModal(true);
+      }
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    if (
+      isMobile &&
+      isIosSafari &&
+      !window.navigator.standalone &&
+      !window.matchMedia("(display-mode: standalone)").matches &&
+      window.matchMedia("(max-width: 767px)").matches
+    ) {
+      setIsIosInstallHint(true);
+      setShowInstallModal(true);
+    }
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -425,9 +465,10 @@ export default function App() {
   };
 
   const masterId = savedMasterProfile?.id ?? 99999;
-  const masterStats =
-    masterStatsMap[masterId] ?? getDefaultMasterStats();
-  const masterFavoriteCount = favoriteIds.filter((id) => id === masterId).length;
+  const masterStats = masterStatsMap[masterId] ?? getDefaultMasterStats();
+  const masterFavoriteCount = favoriteIds.filter(
+    (id) => id === masterId,
+  ).length;
 
   return (
     <div className="min-h-screen bg-white pb-24 text-gray-900 antialiased md:pb-0">
@@ -458,9 +499,12 @@ export default function App() {
           {!masterSessionActive ? (
             <section className="min-h-[calc(100svh-64px)] bg-gray-50 px-4 py-10 pb-28">
               <div className="mx-auto max-w-md tw-panel p-6 text-center">
-                <h1 className="text-xl font-semibold text-gray-950">Войдите как мастер</h1>
+                <h1 className="text-xl font-semibold text-gray-950">
+                  Войдите как мастер
+                </h1>
                 <p className="mt-2 text-sm text-gray-500">
-                  Сессия завершена. Подтвердите телефон, чтобы снова открыть кабинет.
+                  Сессия завершена. Подтвердите телефон, чтобы снова открыть
+                  кабинет.
                 </p>
                 <a
                   href="#master-register"
@@ -471,28 +515,29 @@ export default function App() {
               </div>
             </section>
           ) : (
-          <MasterDashboard
-            profile={savedMasterProfile}
-            stats={masterStats}
-            favoriteCount={masterFavoriteCount}
-            allMasters={allMasters}
-            leads={leads}
-            onEditProfile={() => {
-              window.location.hash = "#master-register";
-            }}
-            onLogout={logoutMaster}
-            onNotify={showToast}
-            onPreviewProfile={() => {
-              const master = allMasters.find((item) => item.id === masterId);
-              if (master) openModal("profile", master);
-              else showToast("Профиль не найден", "Сохраните профиль ещё раз.");
-            }}
-            onShareProfile={() => {
-              const master = allMasters.find((item) => item.id === masterId);
-              if (master) shareMaster(master);
-            }}
-            onApplyPro={() => openModal("pro")}
-          />
+            <MasterDashboard
+              profile={savedMasterProfile}
+              stats={masterStats}
+              favoriteCount={masterFavoriteCount}
+              allMasters={allMasters}
+              leads={leads}
+              onEditProfile={() => {
+                window.location.hash = "#master-register";
+              }}
+              onLogout={logoutMaster}
+              onNotify={showToast}
+              onPreviewProfile={() => {
+                const master = allMasters.find((item) => item.id === masterId);
+                if (master) openModal("profile", master);
+                else
+                  showToast("Профиль не найден", "Сохраните профиль ещё раз.");
+              }}
+              onShareProfile={() => {
+                const master = allMasters.find((item) => item.id === masterId);
+                if (master) shareMaster(master);
+              }}
+              onApplyPro={() => openModal("pro")}
+            />
           )}
         </main>
       ) : route === "clientAuth" ? (
@@ -500,11 +545,17 @@ export default function App() {
           {masterSessionActive ? (
             <section className="min-h-[calc(100svh-64px)] bg-gray-50 px-4 py-10 pb-28">
               <div className="mx-auto max-w-md tw-panel p-6 text-center">
-                <h1 className="text-xl font-semibold text-gray-950">Вход клиента недоступен</h1>
+                <h1 className="text-xl font-semibold text-gray-950">
+                  Вход клиента недоступен
+                </h1>
                 <p className="mt-2 text-sm text-gray-500">
-                  Вы вошли как мастер. Выйдите из кабинета мастера, чтобы войти как клиент.
+                  Вы вошли как мастер. Выйдите из кабинета мастера, чтобы войти
+                  как клиент.
                 </p>
-                <a href="#master-profile" className="mt-5 inline-flex rounded-2xl bg-pink-500 px-5 py-3 text-sm font-semibold text-white">
+                <a
+                  href="#master-profile"
+                  className="mt-5 inline-flex rounded-2xl bg-pink-500 px-5 py-3 text-sm font-semibold text-white"
+                >
                   Кабинет мастера
                 </a>
               </div>
@@ -524,9 +575,12 @@ export default function App() {
           {masterSessionActive ? (
             <section className="min-h-[calc(100svh-64px)] bg-gray-50 px-4 py-10 pb-28">
               <div className="mx-auto max-w-md rounded-[28px] bg-white p-6 text-center shadow-sm">
-                <h1 className="text-xl font-semibold text-gray-950">Профиль клиента недоступен</h1>
+                <h1 className="text-xl font-semibold text-gray-950">
+                  Профиль клиента недоступен
+                </h1>
                 <p className="mt-2 text-sm text-gray-500">
-                  Вы вошли как мастер. Клиентский кабинет открывается только в режиме клиента.
+                  Вы вошли как мастер. Клиентский кабинет открывается только в
+                  режиме клиента.
                 </p>
                 <a
                   href="#master-profile"
@@ -551,9 +605,6 @@ export default function App() {
         </main>
       ) : route === "catalog" ? (
         <main>
-          {!activeClient && !masterSessionActive && (
-            <GuestPromptBanner onLogin={() => requireClientAuth()} />
-          )}
           <MastersCatalog
             allMasters={allMasters}
             favoriteIds={favoriteIds}
@@ -573,9 +624,6 @@ export default function App() {
         </main>
       ) : (
         <main>
-          {!activeClient && !masterSessionActive && (
-            <GuestPromptBanner onLogin={() => requireClientAuth()} />
-          )}
           <Hero
             searchQuery={searchQuery}
             selectedCategory={selectedCategory}
@@ -649,6 +697,77 @@ export default function App() {
         onOpenContact={openMasterContact}
       />
       <Toast toast={toast} onClose={() => setToast(null)} />
+      {showInstallModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-gray-950/70 px-4 py-4">
+          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-950">
+                  Установите Twins
+                </h2>
+                <p className="mt-2 text-sm text-gray-500">
+                  Откройте Twins как приложение, чтобы быстрее заходить и не
+                  зависеть от браузера.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInstallModal(false)}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-6 space-y-4">
+              {installPromptEvent ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    installPromptEvent.prompt();
+                    const choice = await installPromptEvent.userChoice;
+                    setShowInstallModal(false);
+                    setInstallPromptEvent(null);
+                    if (choice.outcome === "accepted") {
+                      showToast(
+                        "Установлено",
+                        "Twins добавлен на главный экран.",
+                      );
+                    } else {
+                      showToast(
+                        "Отмена",
+                        "Установка приложения пока не выполнена.",
+                      );
+                    }
+                  }}
+                  className="w-full rounded-2xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-600"
+                >
+                  Установить приложение
+                </button>
+              ) : isIosInstallHint ? (
+                <div className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
+                  <p className="font-medium">На iPhone откройте меню Safari</p>
+                  <p className="mt-2">
+                    Нажмите «Поделиться» и выберите «Добавить на главный экран».
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
+                  Установка доступна на мобильных устройствах. Если модалка не
+                  открылась, попробуйте браузер Chrome и выберите «Установить».
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowInstallModal(false)}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700"
+              >
+                Позже
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <MobileBottomNav
         client={activeClient}
         masterLoggedIn={masterSessionActive}
