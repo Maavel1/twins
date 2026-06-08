@@ -11,13 +11,13 @@ export default function Pricing({ onModalOpen }) {
   ];
 
   return (
-    <section id="pricing" className="bg-gray-50 py-16">
+    <section id="pricing" className="bg-gray-50 px-4 py-12 pb-28 md:py-16 md:pb-16">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-2 md:items-center lg:px-8">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-pink-50 px-3 py-1.5 text-xs font-semibold text-pink-700">
             Twins PRO для мастеров
           </div>
-          <h2 className="mb-4 text-4xl font-bold leading-tight text-gray-950">Получай больше клиентов каждый день</h2>
+          <h2 className="mb-4 text-3xl font-bold leading-tight text-gray-950 md:text-4xl">Получай больше клиентов каждый день</h2>
           <p className="mb-8 leading-relaxed text-gray-500">
             PRO-метка на карте, пульсирующий аватар и приоритет в поиске помогают клиентам заметить тебя первым.
           </p>

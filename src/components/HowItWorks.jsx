@@ -2,7 +2,7 @@ import { howSteps } from "../data/siteData.js";
 
 export default function HowItWorks() {
   return (
-    <section id="how" className="bg-white py-20">
+    <section id="how" className="bg-white px-4 py-12 md:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>

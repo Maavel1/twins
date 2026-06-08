@@ -1,8 +1,44 @@
 export const navItems = [
   { label: "Каталог", href: "#catalog" },
-  { label: "Мастерам", href: "#masters" },
+  { label: "Мастера", href: "#masters" },
   { label: "Тарифы", href: "#pricing" },
-  { label: "Как работает", href: "#how" },
+  { label: "Поддержка", href: "#support" },
+];
+
+export const footerLinks = [
+  { label: "О проекте", href: "#how" },
+  { label: "Каталог", href: "#catalog" },
+  { label: "Поддержка", href: "#support" },
+  { label: "Конфиденциальность", href: "#support" },
+];
+
+export const supportContacts = [
+  { icon: "💬", label: "WhatsApp", hint: "Быстрые ответы", href: "https://wa.me/77000000000" },
+  { icon: "✈️", label: "Telegram", hint: "@twins_support", href: "https://t.me/twins_support" },
+  { icon: "📧", label: "Email", hint: "help@twins.kz", href: "mailto:help@twins.kz" },
+];
+
+export const supportFaq = [
+  {
+    q: "Как записаться к мастеру?",
+    a: "Найдите мастера на карте или в каталоге, откройте профиль и нажмите «Связаться» или «Оставить заявку». Мастер получит ваш запрос.",
+  },
+  {
+    q: "Можно ли быть клиентом и мастером одновременно?",
+    a: "Нет. В Twins одна активная роль: либо клиент, либо мастер. Чтобы сменить роль — выйдите из текущего аккаунта.",
+  },
+  {
+    q: "Как стать мастером на Twins?",
+    a: "Нажмите «Стать мастером», подтвердите телефон кодом и заполните профиль. После сохранения вы появитесь в каталоге.",
+  },
+  {
+    q: "Что такое Twins PRO?",
+    a: "PRO — платный статус для мастеров: приоритет в поиске, метка на карте и расширенная статистика. Подробнее в разделе «Тарифы».",
+  },
+  {
+    q: "В каких городах работает Twins?",
+    a: "Сейчас сервис доступен в Костанае. Астана, Алматы и другие города подключим позже.",
+  },
 ];
 
 export const categories = [
@@ -164,8 +200,6 @@ export const proBenefits = [
   "Статистика просмотров профиля",
   "Значок «Проверено Twins»",
 ];
-
-export const footerLinks = ["О проекте", "Мастерам", "Поддержка", "Конфиденциальность"];
 
 export const mapCenter = {
   lng: "63.624630",

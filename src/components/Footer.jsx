@@ -2,7 +2,7 @@ import { footerLinks } from "../data/siteData.js";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gray-100 bg-white py-10">
+    <footer className="border-t border-gray-100 bg-white py-10 pb-28 md:pb-10">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row lg:px-8">
         <div className="flex items-center gap-2">
           <img
@@ -14,8 +14,8 @@ export default function Footer() {
         </div>
         <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
           {footerLinks.map((link) => (
-            <a key={link} href="#top" className="transition hover:text-gray-800">
-              {link}
+            <a key={link.label} href={link.href} className="transition hover:text-indigo-600">
+              {link.label}
             </a>
           ))}
         </div>

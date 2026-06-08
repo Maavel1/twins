@@ -14,6 +14,7 @@ export default function MastersSection({
   onSortChange,
   filteredMasters,
   favoriteIds,
+  clientLoggedIn = false,
   onFavoriteToggle,
   onBooking,
   onProfile,
@@ -58,6 +59,7 @@ export default function MastersSection({
                 key={master.id}
                 master={master}
                 isFavorite={favoriteIds.includes(master.id)}
+                clientLoggedIn={clientLoggedIn}
                 onFavoriteToggle={onFavoriteToggle}
                 onBooking={onBooking}
                 onProfile={onProfile}

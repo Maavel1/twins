@@ -5,7 +5,19 @@ import {
   mapCenter,
 } from "../data/siteData.js";
 import { useLocalStorage } from "../hooks/useLocalStorage.js";
-import { formatKzPhone } from "../utils/phone.js";
+import {
+  formatKzPhone,
+  getPhoneValidationError,
+  normalizeKzPhone,
+} from "../utils/phone.js";
+import { validateAbout, validateName, validateOtpCode } from "../utils/input.js";
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  resetRateLimit,
+  sanitizeText,
+  throttleAction,
+} from "../utils/security.js";
 
 const emptyProfile = {
   phone: "",
@@ -120,7 +132,12 @@ function ProfilePreview({ profile, isSaved = false }) {
   );
 }
 
-export default function MasterPortal({ onNotify }) {
+export default function MasterPortal({
+  onNotify,
+  blockedByClient = false,
+  masterLoggedIn = false,
+  onMasterActivate,
+}) {
   const [savedProfile, setSavedProfile] = useLocalStorage(
     "twins:masterProfile",
     null,
@@ -133,9 +150,22 @@ export default function MasterPortal({ onNotify }) {
   const [step, setStep] = useState(savedProfile ? 2 : 0);
   const [isSaved, setIsSaved] = useState(Boolean(savedProfile));
   const [authStep, setAuthStep] = useState(
-    verifiedPhone ? "verified" : "phone",
+    masterLoggedIn ? "verified" : "phone",
   );
   const [phoneDraft, setPhoneDraft] = useState(savedProfile?.phone ?? "");
+
+  useEffect(() => {
+    if (masterLoggedIn) {
+      setAuthStep("verified");
+      return;
+    }
+    setAuthStep("phone");
+    setCodeDraft("");
+    if (!verifiedPhone) {
+      setPhoneDraft(savedProfile?.phone ?? "");
+    }
+  }, [masterLoggedIn, verifiedPhone, savedProfile?.phone]);
+  const [phoneError, setPhoneError] = useState("");
   const [codeDraft, setCodeDraft] = useState("");
 
   const progress = useMemo(
@@ -297,25 +327,64 @@ export default function MasterPortal({ onNotify }) {
     } catch (err) {}
   }, [profile.latitude, profile.longitude]);
 
+  if (blockedByClient) {
+    return (
+      <section className="min-h-[calc(100svh-64px)] bg-gray-50 px-4 py-10 pb-28">
+        <div className="mx-auto max-w-md rounded-[28px] bg-white p-6 text-center shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-950">Регистрация недоступна</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Вы вошли как клиент. В Twins одна роль на аккаунт — выйдите из клиентского профиля, чтобы стать мастером.
+          </p>
+          <a
+            href="#client-profile"
+            className="mt-5 inline-flex rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-semibold text-white"
+          >
+            Перейти в профиль клиента
+          </a>
+        </div>
+      </section>
+    );
+  }
+
   const requestCode = (event) => {
     event.preventDefault();
-    if (!phoneDraft.trim()) {
-      onNotify?.("Введите телефон", "Телефон нужен для входа мастера.");
+    const throttle = throttleAction("master:phone", 1000);
+    if (!throttle.allowed) {
+      onNotify?.("Подождите", throttle.message);
       return;
     }
+    const error = getPhoneValidationError(phoneDraft);
+    if (error) {
+      setPhoneError(error);
+      recordFailedAttempt("master:phone");
+      onNotify?.("Проверьте номер", error);
+      return;
+    }
+    setPhoneError("");
+    resetRateLimit("master:phone");
     setAuthStep("code");
     onNotify?.("Код для MVP", "Введите фиксированный код 1111.");
   };
 
   const verifyPhone = (event) => {
     event.preventDefault();
-    if (codeDraft !== "1111") {
+    const limit = checkRateLimit("master:code", { maxAttempts: 5, lockoutMs: 3 * 60 * 1000 });
+    if (!limit.allowed) {
+      onNotify?.("Слишком много попыток", limit.message);
+      return;
+    }
+    const { value: safeCode, error } = validateOtpCode(codeDraft);
+    if (error || safeCode !== "1111") {
+      recordFailedAttempt("master:code");
       onNotify?.("Неверный код", "Для разработки используется код 1111.");
       return;
     }
-    setVerifiedPhone(phoneDraft.trim());
-    updateProfile("phone", phoneDraft.trim());
+    const normalized = normalizeKzPhone(phoneDraft);
+    setVerifiedPhone(normalized);
+    updateProfile("phone", normalized);
+    onMasterActivate?.();
     setAuthStep("verified");
+    resetRateLimit("master:code");
     onNotify?.(
       "Телефон подтвержден",
       "Теперь можно редактировать профиль мастера.",
@@ -323,9 +392,35 @@ export default function MasterPortal({ onNotify }) {
   };
 
   const saveProfile = () => {
-    setSavedProfile(profile);
+    const phoneErrorOnSave = getPhoneValidationError(profile.phone);
+    if (phoneErrorOnSave) {
+      onNotify?.("Проверьте телефон", phoneErrorOnSave);
+      return;
+    }
+    const { value: safeName, error: nameError } = validateName(profile.name);
+    if (nameError) {
+      onNotify?.("Проверьте имя", nameError);
+      return;
+    }
+    const { value: safeAbout, error: aboutError } = validateAbout(profile.about);
+    if (aboutError) {
+      onNotify?.("Проверьте описание", aboutError);
+      return;
+    }
+    const normalizedPhone = normalizeKzPhone(profile.phone);
+    setVerifiedPhone(normalizedPhone);
+    onMasterActivate?.();
+    setSavedProfile({
+      ...profile,
+      name: safeName,
+      about: safeAbout,
+      phone: normalizedPhone,
+      address: sanitizeText(profile.address, { maxLength: 200 }),
+      id: profile.id ?? 99999,
+    });
     setIsSaved(true);
-    onNotify?.("Профиль сохранен", "Данные мастера сохранены в localStorage.");
+    onNotify?.("Профиль сохранён", "Открываем личный кабинет мастера.");
+    window.location.hash = "#master-profile";
   };
 
   const resetProfile = () => {
@@ -343,7 +438,7 @@ export default function MasterPortal({ onNotify }) {
   return (
     <section
       id="master-register"
-      className="min-h-[calc(100svh-64px)] bg-gray-50 py-8 md:py-14"
+      className="min-h-[calc(100svh-64px)] bg-gray-50 px-4 py-8 pb-28 md:px-0 md:py-14 md:pb-14"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -362,8 +457,18 @@ export default function MasterPortal({ onNotify }) {
               затем сохраните или вернитесь к редактированию.
             </p>
           </div>
-          <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm">
-            Шаг {step + 1} из {steps.length}
+          <div className="flex flex-wrap items-center gap-2">
+            {isSaved && (
+              <a
+                href="#master-profile"
+                className="rounded-2xl bg-pink-50 px-4 py-3 text-sm font-semibold text-pink-700 ring-1 ring-pink-100"
+              >
+                Личный кабинет
+              </a>
+            )}
+            <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm">
+              Шаг {step + 1} из {steps.length}
+            </div>
           </div>
         </div>
 
@@ -376,7 +481,7 @@ export default function MasterPortal({ onNotify }) {
 
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[28px] bg-white p-5 shadow-sm">
-            {authStep !== "verified" && (
+            {authStep !== "verified" && !masterLoggedIn && (
               <div className="mb-6 rounded-[24px] border border-indigo-100 bg-indigo-50 p-4">
                 <h2 className="text-lg font-semibold text-gray-950">
                   Подтвердите телефон
@@ -386,18 +491,29 @@ export default function MasterPortal({ onNotify }) {
                   Код MVP: 1111.
                 </p>
                 {authStep === "phone" ? (
-                  <form onSubmit={requestCode} className="mt-4 flex gap-2">
-                    <input
-                      value={phoneDraft}
-                      onChange={(event) =>
-                        setPhoneDraft(formatKzPhone(event.target.value))
-                      }
-                      className="min-w-0 flex-1 rounded-2xl border border-indigo-100 px-4 py-3 text-sm outline-none focus:border-indigo-400"
-                      placeholder="+7 (777) 000-00-00"
-                    />
-                    <button className="rounded-2xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white">
-                      Код
-                    </button>
+                  <form onSubmit={requestCode} className="mt-4 space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        value={phoneDraft}
+                        onChange={(event) => {
+                          setPhoneDraft(formatKzPhone(event.target.value));
+                          setPhoneError("");
+                        }}
+                        inputMode="tel"
+                        autoComplete="tel"
+                        className={`min-w-0 flex-1 rounded-2xl border px-4 py-3 text-sm outline-none ${phoneError ? "border-red-300 focus:border-red-400" : "border-indigo-100 focus:border-indigo-400"}`}
+                        placeholder="+7 (777) 000-00-00"
+                      />
+                      <button className="rounded-2xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white">
+                        Код
+                      </button>
+                    </div>
+                    {phoneError && (
+                      <p className="text-xs text-red-500">{phoneError}</p>
+                    )}
+                    <p className="text-[11px] text-indigo-500/80">
+                      Полный номер: +7 (7XX) XXX-XX-XX
+                    </p>
                   </form>
                 ) : (
                   <form onSubmit={verifyPhone} className="mt-4 flex gap-2">

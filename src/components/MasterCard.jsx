@@ -2,6 +2,7 @@ export default function MasterCard({
   master,
   compact = false,
   isFavorite = false,
+  clientLoggedIn = false,
   onFavoriteToggle,
   onBooking,
   onProfile,
@@ -13,11 +14,17 @@ export default function MasterCard({
       <button
         type="button"
         onClick={() => onFavoriteToggle(master)}
-        className={`${isFavorite ? "bg-pink-500 text-white" : "bg-white text-gray-400"} absolute right-3 top-9 grid h-9 w-9 place-items-center rounded-full shadow-sm ring-1 ring-gray-100 transition hover:bg-pink-500 hover:text-white`}
+        className={`${isFavorite ? "bg-pink-500 text-white" : clientLoggedIn ? "bg-white text-gray-400" : "bg-white text-gray-300"} absolute right-3 top-9 grid h-9 w-9 place-items-center rounded-full shadow-sm ring-1 ring-gray-100 transition hover:bg-pink-500 hover:text-white`}
         aria-label={isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
-        title={isFavorite ? "В избранном" : "Добавить в избранное"}
+        title={
+          clientLoggedIn
+            ? isFavorite
+              ? "В избранном"
+              : "Добавить в избранное"
+            : "Войдите, чтобы добавить в избранное"
+        }
       >
-        ♥
+        {clientLoggedIn ? "♥" : "♡"}
       </button>
       <div className="flex flex-1 items-start gap-3">
         <div className={`grid h-12 w-12 flex-shrink-0 place-items-center rounded-full ${master.color} text-base font-bold`}>{master.initials}</div>
