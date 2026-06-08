@@ -12,7 +12,6 @@ import Toast from "./components/Toast.jsx";
 import MobileBottomNav from "./components/MobileBottomNav.jsx";
 import ClientAuth from "./components/ClientAuth.jsx";
 import ClientProfile from "./components/ClientProfile.jsx";
-import InstallPrompt from "./components/InstallPrompt.jsx";
 import { masters } from "./data/siteData.js";
 import { useLocalStorage } from "./hooks/useLocalStorage.js";
 
@@ -31,10 +30,6 @@ export default function App() {
   });
   const [geoStatus, setGeoStatus] = useState("requesting");
   const [userLocation, setUserLocation] = useState(null);
-  const [installPromptEvent, setInstallPromptEvent] = useState(null);
-  const [canInstall, setCanInstall] = useState(false);
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const [showInstallModal, setShowInstallModal] = useState(false);
   const [favoriteIds, setFavoriteIds] = useLocalStorage("twins:favorites", []);
   const [leads, setLeads] = useLocalStorage("twins:leads", []);
   const [clients, setClients] = useLocalStorage("twins:clients", []);
@@ -71,43 +66,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const isMobile =
-      typeof navigator !== "undefined" &&
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent,
-      );
-
-    setIsMobileDevice(isMobile);
-  }, []);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (event) => {
-      event.preventDefault();
-      setInstallPromptEvent(event);
-      setCanInstall(true);
-      setShowInstallModal(true);
-    };
-
-    const handleAppInstalled = () => {
-      setCanInstall(false);
-      setInstallPromptEvent(null);
-      setShowInstallModal(false);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt,
-      );
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleHashChange = () => {
+      setMobileMenuOpen(false);
       if (window.location.hash === "#master-register") setRoute("master");
       else if (window.location.hash === "#client-auth") setRoute("clientAuth");
       else if (window.location.hash === "#client-profile")
@@ -118,6 +78,10 @@ export default function App() {
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [route]);
 
   const filteredMasters = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -201,36 +165,6 @@ export default function App() {
   const showToast = (title, text = "") => {
     setToast({ title, text });
     window.setTimeout(() => setToast(null), 3500);
-  };
-
-  const handleInstall = async () => {
-    const isIos =
-      typeof navigator !== "undefined" &&
-      /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-    if (!installPromptEvent) {
-      if (isIos) {
-        showToast(
-          "Добавь на главный экран",
-          "Нажми «Поделиться» и выбери «На экран «Домой»».",
-        );
-      } else {
-        showToast("Установка недоступна", "Ожидайте подсказку браузера.");
-      }
-      return;
-    }
-
-    setShowInstallModal(false);
-    installPromptEvent.prompt();
-    const choiceResult = await installPromptEvent.userChoice;
-    setCanInstall(false);
-    setInstallPromptEvent(null);
-
-    if (choiceResult.outcome === "accepted") {
-      showToast("Приложение установлено", "Twins добавлен на главный экран.");
-    } else {
-      showToast("Установка отменена", "Вы можете установить приложение позже.");
-    }
   };
 
   const toggleFavorite = (master) => {
@@ -350,8 +284,6 @@ export default function App() {
             `${city} пока в ожидании. Сейчас доступен Костанай.`,
           )
         }
-        canInstall={canInstall || isMobileDevice}
-        onInstall={handleInstall}
       />
       {route === "master" ? (
         <main>
@@ -373,10 +305,7 @@ export default function App() {
             masters={masters}
             favoriteIds={favoriteIds}
             viewedIds={viewedMasterIds}
-            onOpenMaster={(master) => {
-              window.location.hash = "#top";
-              openMasterProfile(master);
-            }}
+            onOpenMaster={openMasterProfile}
             onLogout={logoutClient}
           />
         </main>
@@ -446,12 +375,6 @@ export default function App() {
         onFavoriteToggle={toggleFavorite}
       />
       <Toast toast={toast} onClose={() => setToast(null)} />
-      <InstallPrompt
-        isOpen={showInstallModal}
-        isMobileDevice={isMobileDevice}
-        onInstall={handleInstall}
-        onClose={() => setShowInstallModal(false)}
-      />
       <MobileBottomNav />
     </div>
   );

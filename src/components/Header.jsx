@@ -1,13 +1,11 @@
 import { cities, navItems } from "../data/siteData.js";
-import { LogoMark, MenuIcon } from "./Icons.jsx";
+import { MenuIcon } from "./Icons.jsx";
 
 export default function Header({
   isMenuOpen,
   onMenuToggle,
   client,
   onCityUnavailable,
-  canInstall,
-  onInstall,
 }) {
   return (
     <>
@@ -15,7 +13,7 @@ export default function Header({
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-2" aria-label="Twins">
             <img
-              className="h-30 w-30"
+              className="h-10 w-auto max-w-[132px] object-contain sm:h-11 md:h-12"
               src="/twins__logo.svg"
               alt="Логотип Twins"
             />
@@ -61,38 +59,12 @@ export default function Header({
                 {client.name}
               </a>
             ) : (
-              <>
-                <a
-                  href="#client-auth"
-                  className="hidden rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 hover:text-indigo-600 md:block"
-                >
-                  Войти
-                </a>
-                <a
-                  href="#client-auth"
-                  className="hidden rounded-xl bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-600 sm:block"
-                >
-                  Регистрация
-                </a>
-              </>
-            )}
-            {canInstall && (
-              <>
-                <button
-                  type="button"
-                  onClick={onInstall}
-                  className="hidden rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 md:block"
-                >
-                  Установить
-                </button>
-                <button
-                  type="button"
-                  onClick={onInstall}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 md:hidden"
-                >
-                  Установить
-                </button>
-              </>
+              <a
+                href="#client-auth"
+                className="hidden rounded-xl bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 md:block"
+              >
+                Войти / Регистрация
+              </a>
             )}
             <a
               href="#master-register"
@@ -104,6 +76,7 @@ export default function Header({
               type="button"
               onClick={onMenuToggle}
               className="grid h-10 w-10 place-items-center rounded-xl text-gray-500 transition hover:bg-gray-50 hover:text-gray-800 md:hidden"
+              aria-expanded={isMenuOpen}
               aria-label="Открыть меню"
             >
               <MenuIcon />
@@ -113,12 +86,13 @@ export default function Header({
       </header>
 
       <div
-        className={`${isMenuOpen ? "block" : "hidden"} border-b border-gray-100 bg-white px-4 py-4 md:hidden`}
+        className={`${isMenuOpen ? "block" : "hidden"} fixed inset-x-0 top-16 z-40 max-h-[calc(100svh-64px)] overflow-y-auto border-b border-gray-100 bg-white px-4 py-4 shadow-2xl md:hidden`}
       >
         {navItems.map((item) => (
           <a
             key={item.href}
             href={item.href}
+            onClick={onMenuToggle}
             className="block py-2 text-sm font-medium text-gray-700"
           >
             {item.label}
@@ -130,18 +104,10 @@ export default function Header({
             Пока доступен только один город. Остальные подключим позже.
           </div>
         </div>
-        {canInstall && (
-          <button
-            type="button"
-            onClick={onInstall}
-            className="mb-3 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-          >
-            Установить приложение
-          </button>
-        )}
         {client ? (
           <a
             href="#client-profile"
+            onClick={onMenuToggle}
             className="mb-2 block w-full rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold text-white"
           >
             Мой профиль
@@ -149,6 +115,7 @@ export default function Header({
         ) : (
           <a
             href="#client-auth"
+            onClick={onMenuToggle}
             className="mb-2 block w-full rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold text-white"
           >
             Войти / Регистрация
@@ -156,6 +123,7 @@ export default function Header({
         )}
         <a
           href="#master-register"
+          onClick={onMenuToggle}
           className="mt-3 block w-full rounded-xl bg-pink-500 px-4 py-2.5 text-center text-sm font-semibold text-white"
         >
           Стать мастером / Войти

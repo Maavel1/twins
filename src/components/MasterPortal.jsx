@@ -19,6 +19,34 @@ const emptyProfile = {
   telegram: "",
 };
 
+const YANDEX_MAPS_API_KEY = "057b2b84-a204-4c54-98a4-1dbb53abc333";
+let yandexMapsLoader = null;
+
+function loadYandexMaps() {
+  if (typeof window === "undefined") return Promise.reject();
+  if (window.ymaps) return Promise.resolve(window.ymaps);
+  if (yandexMapsLoader) return yandexMapsLoader;
+
+  yandexMapsLoader = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-twins-ymaps="true"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.ymaps));
+      existing.addEventListener("error", reject);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU`;
+    script.async = true;
+    script.dataset.twinsYmaps = "true";
+    script.onload = () => resolve(window.ymaps);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+
+  return yandexMapsLoader;
+}
+
 const steps = [
   { title: "Контакты", hint: "Кто вы и как с вами связаться" },
   { title: "Услуга", hint: "Категория, адрес и точка на карте" },
@@ -139,6 +167,7 @@ export default function MasterPortal({ onNotify }) {
   };
 
   const setMarkerByClick = (event) => {
+    if (miniMapInstance.current?.map) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - rect.left) / rect.width;
     const y = (event.clientY - rect.top) / rect.height;
@@ -154,19 +183,28 @@ export default function MasterPortal({ onNotify }) {
   const miniMapInstance = useRef(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     let suggestView = null;
     let map = null;
     let placemark = null;
+    let cancelled = false;
 
-    const doInit = () => {
-      window.ymaps.ready(() => {
+    loadYandexMaps()
+      .then((ymaps) => {
+        if (cancelled) return;
+        ymaps.ready(() => {
+          if (cancelled) return;
         try {
           if (addressRef.current) {
-            suggestView = new window.ymaps.SuggestView(addressRef.current);
+            suggestView = new ymaps.SuggestView(addressRef.current, {
+              results: 6,
+              provider: {
+                suggest: (request, options) =>
+                  ymaps.suggest(`Костанай, ${request}`, options),
+              },
+            });
             suggestView.events.add("select", function (e) {
               const text = e.get("item").value;
-              window.ymaps.geocode(text).then((res) => {
+              ymaps.geocode(text, { results: 1 }).then((res) => {
                 const first = res.geoObjects.get(0);
                 if (!first) return;
                 const coords = first.geometry.getCoordinates();
@@ -188,12 +226,12 @@ export default function MasterPortal({ onNotify }) {
               Number(profile.latitude) || Number(mapCenter.lat),
               Number(profile.longitude) || Number(mapCenter.lng),
             ];
-            map = new window.ymaps.Map(miniMapRef.current, {
+            map = new ymaps.Map(miniMapRef.current, {
               center,
-              zoom: 12,
-              controls: [],
+              zoom: 16,
+              controls: ["zoomControl"],
             });
-            placemark = new window.ymaps.Placemark(
+            placemark = new ymaps.Placemark(
               center,
               {},
               { draggable: true },
@@ -228,27 +266,16 @@ export default function MasterPortal({ onNotify }) {
         } catch (err) {
           // ignore map init errors
         }
-        miniMapInstance.current = { map, placemark, suggestView };
+          miniMapInstance.current = { map, placemark, suggestView };
+        });
+      })
+      .catch(() => {
+        onNotify?.("Карта временно недоступна", "Можно поставить точку кликом по схеме ниже.");
       });
-    };
-
-    let poll = null;
-    if (typeof window !== "undefined") {
-      if (window.ymaps) doInit();
-      else {
-        poll = setInterval(() => {
-          if (window.ymaps) {
-            clearInterval(poll);
-            poll = null;
-            doInit();
-          }
-        }, 150);
-      }
-    }
 
     return () => {
+      cancelled = true;
       try {
-        if (poll) clearInterval(poll);
         if (miniMapInstance.current?.map) miniMapInstance.current.map.destroy();
         if (miniMapInstance.current?.suggestView)
           miniMapInstance.current.suggestView.destroy();
@@ -533,6 +560,7 @@ export default function MasterPortal({ onNotify }) {
                     </div>
                     <div
                       ref={miniMapRef}
+                      onClick={setMarkerByClick}
                       className="relative h-44 w-full overflow-hidden rounded-3xl border border-indigo-100 bg-[#e8f0e4] text-left"
                     >
                       <div
